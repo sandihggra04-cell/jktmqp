@@ -1,0 +1,28 @@
+POWERPLANT ENGINEERING CONTROL CENTER
+=====================================
+
+CARA PALING MUDAH
+1. Extract seluruh ZIP ke satu folder.
+2. Double-click: START_CONTROL_CENTER.bat
+3. Tunggu browser membuka http://localhost:8501
+
+JANGAN copy diagram/struktur menu ke PowerShell.
+Tulisan seperti "Engine Detail & History" adalah nama menu, BUKAN command terminal.
+
+ALTERNATIF VIA TERMINAL
+Buka PowerShell pada folder ini lalu jalankan SATU command berikut:
+
+python -m streamlit run app.py
+
+Jika dependency belum ada:
+
+python -m pip install -r requirements.txt
+
+lalu ulangi:
+
+python -m streamlit run app.py
+
+V4.7.4 DATA SOURCE
+- Paste Google Sheets / SharePoint / OneDrive Excel URL, or a local Excel/CSV path.
+- Alternatively upload Excel/CSV directly from the sidebar.
+- The data-source panel has been simplified for a cleaner interface.
