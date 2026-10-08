@@ -110,74 +110,109 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — same quick-switch concept used by Engine/APU rooms
+# ROOM NAVIGATION — visually matched to Engine/APU sidebar
 # -----------------------------------------------------------------------------
 st.sidebar.markdown(
     r"""
     <style>
-    /* Style only Streamlit page links in the Reliability sidebar. */
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] {
-        margin: 0 0 10px 0 !important;
+    /* Reliability room navigation */
+    div[data-testid="stSidebar"] .reliability-room-menu-rule {
+        height: 1px;
+        background: rgba(145, 164, 189, .25);
+        margin: 8px 0 26px 0;
     }
 
+    div[data-testid="stSidebar"] .reliability-room-menu-title {
+        color: #9BAFC8 !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        letter-spacing: .14em !important;
+        margin: 0 0 20px 2px !important;
+    }
+
+    /* Page-link buttons: Engine / APU / Control Center */
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] {
+        margin: 0 0 10px 0 !important;
+        width: 100% !important;
+    }
+
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] > a,
     div[data-testid="stSidebar"] [data-testid="stPageLink"] a {
-        min-height: 58px !important;
-        border-radius: 15px !important;
+        min-height: 62px !important;
+        width: 100% !important;
+        border-radius: 16px !important;
         border: 1px solid #35577D !important;
         background: #213C5D !important;
         color: #F5F8FC !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        padding: 0 14px !important;
-        text-decoration: none !important;
+        padding: 0 16px !important;
         box-sizing: border-box !important;
-        transition: background .15s ease, border-color .15s ease !important;
+        text-decoration: none !important;
+        opacity: 1 !important;
+        transition: background .15s ease, border-color .15s ease, transform .15s ease !important;
     }
 
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] > a:hover,
     div[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
         background: #294867 !important;
         border-color: #5F91B6 !important;
         color: #FFFFFF !important;
+        transform: translateY(-1px);
     }
 
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a p {
-        margin: 0 !important;
+    /* Force all nested text to white; this overrides the global sidebar skin. */
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a *,
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a p,
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a span {
+        color: #F5F8FC !important;
+        -webkit-text-fill-color: #F5F8FC !important;
+        opacity: 1 !important;
         font-size: 18px !important;
         line-height: 1.15 !important;
-        font-weight: 600 !important;
-        color: inherit !important;
+        font-weight: 500 !important;
         text-align: center !important;
+        margin: 0 !important;
     }
 
-    /* Current Reliability page */
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
-        background: linear-gradient(90deg, #4A8D98 0%, #3B648C 100%) !important;
-        border-color: #5D9BB5 !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] p {
-        font-weight: 800 !important;
-    }
-
-    .reliability-room-nav-title {
-        color: #91A4BD;
-        font-size: 13px;
+    /* Active Reliability card — exactly the highlighted-room treatment. */
+    div[data-testid="stSidebar"] .reliability-active-room {
+        min-height: 62px;
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid #5D9BB5;
+        background: linear-gradient(90deg, #4D9098 0%, #3D668E 100%);
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        margin: 0 0 10px 0;
+        box-sizing: border-box;
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: .12em;
-        margin: 16px 0 13px 2px;
+        line-height: 1.15;
     }
 
-    .reliability-room-nav-rule {
+    div[data-testid="stSidebar"] .reliability-active-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #A9F0EB;
+        box-shadow: 0 0 0 5px rgba(169, 240, 235, .12);
+        margin-right: 14px;
+        flex: 0 0 auto;
+    }
+
+    div[data-testid="stSidebar"] .reliability-room-menu-bottom-rule {
         height: 1px;
-        background: rgba(145,164,189,.24);
-        margin: 4px 0 16px 0;
+        background: rgba(145, 164, 189, .25);
+        margin: 22px 0 16px 0;
     }
     </style>
 
-    <div class="reliability-room-nav-rule"></div>
-    <div class="reliability-room-nav-title">ROOMS</div>
+    <div class="reliability-room-menu-rule"></div>
+    <div class="reliability-room-menu-title">ROOMS</div>
     """,
     unsafe_allow_html=True,
 )
@@ -192,11 +227,17 @@ st.sidebar.page_link(
     label="APU Shop Visit",
     use_container_width=True,
 )
-st.sidebar.page_link(
-    "reliability_page.py",
-    label="Reliability Room",
-    use_container_width=True,
+
+st.sidebar.markdown(
+    """
+    <div class="reliability-active-room">
+        <span class="reliability-active-dot"></span>
+        <span>Reliability Room</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
+
 st.sidebar.page_link(
     "home.py",
     label="Control Center",
@@ -204,7 +245,7 @@ st.sidebar.page_link(
 )
 
 st.sidebar.markdown(
-    '<div class="reliability-room-nav-rule" style="margin-top:14px;"></div>',
+    '<div class="reliability-room-menu-bottom-rule"></div>',
     unsafe_allow_html=True,
 )
 
