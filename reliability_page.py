@@ -7,17 +7,10 @@ from pathlib import Path
 import re
 import sys
 
-# Make ./src importable even when VS Code/Streamlit starts from another folder.
+# Make the flat project root importable regardless of Streamlit working directory.
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
-SRC_DIR = PROJECT_ROOT / "src"
-if not SRC_DIR.is_dir():
-    raise RuntimeError(
-        f"Folder 'src' tidak ditemukan di {PROJECT_ROOT}. "
-        "Pastikan app.py dan folder src berada dalam folder project yang sama."
-    )
 
 import pandas as pd
 import plotly.express as px

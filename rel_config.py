@@ -14,6 +14,9 @@ EXPOSURE_DIR = BASE_DIR / ".runtime_exposure"
 SUPPORT_DIR = BASE_DIR / ".runtime_support"
 PARTS_DIR = BASE_DIR / ".runtime_parts"
 
+for _runtime_dir in (DELAY_DIR, DEMO_DIR, EXPOSURE_DIR, SUPPORT_DIR, PARTS_DIR):
+    _runtime_dir.mkdir(parents=True, exist_ok=True)
+
 # Approved technical-delay universe for the official Powerplant Delay Contribution denominator.
 # ATA 05 is normalized to integer 5 during data loading.
 ALL_TECHNICAL_ATAS = {

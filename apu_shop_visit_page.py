@@ -670,7 +670,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-root = Path(__file__).resolve().parents[2]
+root = Path(__file__).resolve().parent
 logo_candidates = [
     root / "garuda_logo_white_generated_hd.png",
     root / "garuda_logo_white_ultra_hd.png",
