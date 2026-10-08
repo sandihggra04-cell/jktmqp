@@ -108,6 +108,106 @@ inject_css(bool(st.session_state["night_mode"]))
 
 render_sidebar_brand()
 
+
+# -----------------------------------------------------------------------------
+# ROOM NAVIGATION — same quick-switch concept used by Engine/APU rooms
+# -----------------------------------------------------------------------------
+st.sidebar.markdown(
+    r"""
+    <style>
+    /* Style only Streamlit page links in the Reliability sidebar. */
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] {
+        margin: 0 0 10px 0 !important;
+    }
+
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a {
+        min-height: 58px !important;
+        border-radius: 15px !important;
+        border: 1px solid #35577D !important;
+        background: #213C5D !important;
+        color: #F5F8FC !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 14px !important;
+        text-decoration: none !important;
+        box-sizing: border-box !important;
+        transition: background .15s ease, border-color .15s ease !important;
+    }
+
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+        background: #294867 !important;
+        border-color: #5F91B6 !important;
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a p {
+        margin: 0 !important;
+        font-size: 18px !important;
+        line-height: 1.15 !important;
+        font-weight: 600 !important;
+        color: inherit !important;
+        text-align: center !important;
+    }
+
+    /* Current Reliability page */
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
+        background: linear-gradient(90deg, #4A8D98 0%, #3B648C 100%) !important;
+        border-color: #5D9BB5 !important;
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] p {
+        font-weight: 800 !important;
+    }
+
+    .reliability-room-nav-title {
+        color: #91A4BD;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: .12em;
+        margin: 16px 0 13px 2px;
+    }
+
+    .reliability-room-nav-rule {
+        height: 1px;
+        background: rgba(145,164,189,.24);
+        margin: 4px 0 16px 0;
+    }
+    </style>
+
+    <div class="reliability-room-nav-rule"></div>
+    <div class="reliability-room-nav-title">ROOMS</div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.sidebar.page_link(
+    "engine_shop_visit_page.py",
+    label="Engine Shop Visit",
+    use_container_width=True,
+)
+st.sidebar.page_link(
+    "apu_shop_visit_page.py",
+    label="APU Shop Visit",
+    use_container_width=True,
+)
+st.sidebar.page_link(
+    "reliability_page.py",
+    label="Reliability Room",
+    use_container_width=True,
+)
+st.sidebar.page_link(
+    "home.py",
+    label="Control Center",
+    use_container_width=True,
+)
+
+st.sidebar.markdown(
+    '<div class="reliability-room-nav-rule" style="margin-top:14px;"></div>',
+    unsafe_allow_html=True,
+)
+
 st.sidebar.toggle("Night mode", key="night_mode", help="Switch between light and dark display modes.")
 
 PLOT_CONFIG = {
