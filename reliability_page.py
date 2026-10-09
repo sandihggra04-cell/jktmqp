@@ -110,62 +110,51 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — visually matched to Engine/APU sidebar
+# ROOM NAVIGATION — button-based version for reliable readability
 # -----------------------------------------------------------------------------
 st.sidebar.markdown(
     r"""
     <style>
-    /* Reliability room navigation */
-    div[data-testid="stSidebar"] .reliability-room-menu-rule {
+    div[data-testid="stSidebar"] .room-nav-rule {
         height: 1px;
-        background: rgba(145, 164, 189, .25);
-        margin: 8px 0 26px 0;
+        background: rgba(145,164,189,.24);
+        margin: 8px 0 24px 0;
     }
 
-    div[data-testid="stSidebar"] .reliability-room-menu-title {
+    div[data-testid="stSidebar"] .room-nav-title {
         color: #9BAFC8 !important;
+        -webkit-text-fill-color: #9BAFC8 !important;
         font-size: 13px !important;
         font-weight: 800 !important;
         letter-spacing: .14em !important;
-        margin: 0 0 20px 2px !important;
+        margin: 0 0 18px 2px !important;
     }
 
-    /* Page-link buttons: Engine / APU / Control Center */
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] {
-        margin: 0 0 10px 0 !important;
-        width: 100% !important;
-    }
-
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] > a,
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a {
+    /* All Streamlit buttons in this navigation area */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button {
         min-height: 62px !important;
         width: 100% !important;
         border-radius: 16px !important;
         border: 1px solid #35577D !important;
         background: #213C5D !important;
         color: #F5F8FC !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        -webkit-text-fill-color: #F5F8FC !important;
         padding: 0 16px !important;
+        margin: 0 0 10px 0 !important;
         box-sizing: border-box !important;
-        text-decoration: none !important;
-        opacity: 1 !important;
-        transition: background .15s ease, border-color .15s ease, transform .15s ease !important;
+        box-shadow: none !important;
     }
 
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] > a:hover,
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
         background: #294867 !important;
         border-color: #5F91B6 !important;
         color: #FFFFFF !important;
-        transform: translateY(-1px);
+        -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    /* Force all nested text to white; this overrides the global sidebar skin. */
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a *,
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a p,
-    div[data-testid="stSidebar"] [data-testid="stPageLink"] a span {
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button *,
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p,
+    div[data-testid="stSidebar"] div[data-testid="stButton"] > button span {
         color: #F5F8FC !important;
         -webkit-text-fill-color: #F5F8FC !important;
         opacity: 1 !important;
@@ -176,14 +165,15 @@ st.sidebar.markdown(
         margin: 0 !important;
     }
 
-    /* Active Reliability card — exactly the highlighted-room treatment. */
-    div[data-testid="stSidebar"] .reliability-active-room {
+    /* Active Reliability room card */
+    div[data-testid="stSidebar"] .room-active-card {
         min-height: 62px;
         width: 100%;
         border-radius: 16px;
         border: 1px solid #5D9BB5;
-        background: linear-gradient(90deg, #4D9098 0%, #3D668E 100%);
-        color: #FFFFFF;
+        background: linear-gradient(90deg,#4D9098 0%,#3D668E 100%);
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         display: flex;
         align-items: center;
         padding: 0 18px;
@@ -194,58 +184,56 @@ st.sidebar.markdown(
         line-height: 1.15;
     }
 
-    div[data-testid="stSidebar"] .reliability-active-dot {
+    div[data-testid="stSidebar"] .room-active-card * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
+    }
+
+    div[data-testid="stSidebar"] .room-active-dot {
         width: 11px;
         height: 11px;
         border-radius: 50%;
         background: #A9F0EB;
-        box-shadow: 0 0 0 5px rgba(169, 240, 235, .12);
+        box-shadow: 0 0 0 5px rgba(169,240,235,.12);
         margin-right: 14px;
         flex: 0 0 auto;
     }
 
-    div[data-testid="stSidebar"] .reliability-room-menu-bottom-rule {
+    div[data-testid="stSidebar"] .room-nav-bottom-rule {
         height: 1px;
-        background: rgba(145, 164, 189, .25);
+        background: rgba(145,164,189,.24);
         margin: 22px 0 16px 0;
     }
     </style>
 
-    <div class="reliability-room-menu-rule"></div>
-    <div class="reliability-room-menu-title">ROOMS</div>
+    <div class="room-nav-rule"></div>
+    <div class="room-nav-title">ROOMS</div>
     """,
     unsafe_allow_html=True,
 )
 
-st.sidebar.page_link(
-    "engine_shop_visit_page.py",
-    label="Engine Shop Visit",
-    use_container_width=True,
-)
-st.sidebar.page_link(
-    "apu_shop_visit_page.py",
-    label="APU Shop Visit",
-    use_container_width=True,
-)
+if st.sidebar.button("Engine Shop Visit", key="rel_room_engine", use_container_width=True):
+    st.switch_page("engine_shop_visit_page.py")
+
+if st.sidebar.button("APU Shop Visit", key="rel_room_apu", use_container_width=True):
+    st.switch_page("apu_shop_visit_page.py")
 
 st.sidebar.markdown(
     """
-    <div class="reliability-active-room">
-        <span class="reliability-active-dot"></span>
+    <div class="room-active-card">
+        <span class="room-active-dot"></span>
         <span>Reliability Room</span>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-st.sidebar.page_link(
-    "home.py",
-    label="Control Center",
-    use_container_width=True,
-)
+if st.sidebar.button("Control Center", key="rel_room_home", use_container_width=True):
+    st.switch_page("home.py")
 
 st.sidebar.markdown(
-    '<div class="reliability-room-menu-bottom-rule"></div>',
+    '<div class="room-nav-bottom-rule"></div>',
     unsafe_allow_html=True,
 )
 
