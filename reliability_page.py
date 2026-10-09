@@ -110,11 +110,16 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — harmonized with Engine/APU room sidebar
+# ROOM NAVIGATION — locked visual using pure HTML anchors
 # -----------------------------------------------------------------------------
 st.sidebar.markdown(
     r"""
     <style>
+    div[data-testid="stSidebar"] .room-nav-shell {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
     div[data-testid="stSidebar"] .room-nav-rule {
         height: 1px;
         background: rgba(145,164,189,.24);
@@ -129,53 +134,44 @@ st.sidebar.markdown(
         font-weight: 800 !important;
         letter-spacing: .14em !important;
         margin: 0 0 20px 2px !important;
+        padding: 0 !important;
     }
 
-    div[data-testid="stSidebar"] .st-key-rel_room_engine button,
-    div[data-testid="stSidebar"] .st-key-rel_room_apu button,
-    div[data-testid="stSidebar"] .st-key-rel_room_home button {
-        min-height: 62px !important;
-        height: 62px !important;
-        width: 100% !important;
-        border-radius: 16px !important;
-        border: 1px solid #35577D !important;
-        background: #213C5D !important;
-        box-shadow: none !important;
-        padding: 0 16px !important;
-        margin: 0 !important;
+    div[data-testid="stSidebar"] a.room-nav-btn,
+    div[data-testid="stSidebar"] a.room-nav-btn:link,
+    div[data-testid="stSidebar"] a.room-nav-btn:visited {
+        min-height: 62px;
+        height: 62px;
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid #35577D;
+        background: #213C5D;
         color: #F5F8FC !important;
         -webkit-text-fill-color: #F5F8FC !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 0 16px;
+        margin: 0 0 10px 0;
+        text-decoration: none !important;
+        font-size: 18px;
+        line-height: 1.15;
+        font-weight: 500;
+        text-align: center;
+        box-shadow: none;
+        opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .st-key-rel_room_engine button:hover,
-    div[data-testid="stSidebar"] .st-key-rel_room_apu button:hover,
-    div[data-testid="stSidebar"] .st-key-rel_room_home button:hover {
-        background: #294867 !important;
-        border-color: #5F91B6 !important;
+    div[data-testid="stSidebar"] a.room-nav-btn:hover {
+        background: #294867;
+        border-color: #5F91B6;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
+        text-decoration: none !important;
     }
 
-    div[data-testid="stSidebar"] .st-key-rel_room_engine button *,
-    div[data-testid="stSidebar"] .st-key-rel_room_apu button *,
-    div[data-testid="stSidebar"] .st-key-rel_room_home button * {
-        color: #F5F8FC !important;
-        -webkit-text-fill-color: #F5F8FC !important;
-        opacity: 1 !important;
-        font-size: 18px !important;
-        line-height: 1.15 !important;
-        font-weight: 500 !important;
-        text-align: center !important;
-        margin: 0 !important;
-    }
-
-    div[data-testid="stSidebar"] .st-key-rel_room_engine,
-    div[data-testid="stSidebar"] .st-key-rel_room_apu,
-    div[data-testid="stSidebar"] .st-key-rel_room_home {
-        margin: 0 0 10px 0 !important;
-    }
-
-    div[data-testid="stSidebar"] .reliability-active-card {
+    div[data-testid="stSidebar"] .room-active-card {
         min-height: 62px;
         height: 62px;
         width: 100%;
@@ -186,21 +182,23 @@ st.sidebar.markdown(
         -webkit-text-fill-color: #FFFFFF !important;
         display: flex;
         align-items: center;
+        box-sizing: border-box;
         padding: 0 18px;
         margin: 0 0 10px 0;
-        box-sizing: border-box;
         font-size: 18px;
         line-height: 1.15;
         font-weight: 800;
+        text-align: left;
+        opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .reliability-active-card * {
+    div[data-testid="stSidebar"] .room-active-card span {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .reliability-active-dot {
+    div[data-testid="stSidebar"] .room-active-dot {
         width: 11px;
         height: 11px;
         border-radius: 50%;
@@ -217,36 +215,23 @@ st.sidebar.markdown(
     }
     </style>
 
-    <div class="room-nav-rule"></div>
-    <div class="room-nav-title">ROOMS</div>
-    """,
-    unsafe_allow_html=True,
-)
+    <div class="room-nav-shell">
+        <div class="room-nav-rule"></div>
+        <div class="room-nav-title">ROOMS</div>
 
-with st.sidebar.container(key="rel_room_engine"):
-    if st.button("Engine Shop Visit", key="rel_room_engine_btn", use_container_width=True):
-        st.switch_page("engine_shop_visit_page.py")
+        <a class="room-nav-btn" href="/shop-visit" target="_self">Engine Shop Visit</a>
+        <a class="room-nav-btn" href="/apu-shop-visit" target="_self">APU Shop Visit</a>
 
-with st.sidebar.container(key="rel_room_apu"):
-    if st.button("APU Shop Visit", key="rel_room_apu_btn", use_container_width=True):
-        st.switch_page("apu_shop_visit_page.py")
+        <div class="room-active-card">
+            <span class="room-active-dot"></span>
+            <span>Reliability Room</span>
+        </div>
 
-st.sidebar.markdown(
-    """
-    <div class="reliability-active-card">
-        <span class="reliability-active-dot"></span>
-        <span>Reliability Room</span>
+        <a class="room-nav-btn" href="/" target="_self">Control Center</a>
+
+        <div class="room-nav-bottom-rule"></div>
     </div>
     """,
-    unsafe_allow_html=True,
-)
-
-with st.sidebar.container(key="rel_room_home"):
-    if st.button("Control Center", key="rel_room_home_btn", use_container_width=True):
-        st.switch_page("home.py")
-
-st.sidebar.markdown(
-    '<div class="room-nav-bottom-rule"></div>',
     unsafe_allow_html=True,
 )
 
