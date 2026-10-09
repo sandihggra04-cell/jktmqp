@@ -110,7 +110,7 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — button-based version for reliable readability
+# ROOM NAVIGATION — harmonized with Engine/APU room sidebar
 # -----------------------------------------------------------------------------
 st.sidebar.markdown(
     r"""
@@ -125,36 +125,40 @@ st.sidebar.markdown(
         color: #9BAFC8 !important;
         -webkit-text-fill-color: #9BAFC8 !important;
         font-size: 13px !important;
+        line-height: 1 !important;
         font-weight: 800 !important;
         letter-spacing: .14em !important;
-        margin: 0 0 18px 2px !important;
+        margin: 0 0 20px 2px !important;
     }
 
-    /* All Streamlit buttons in this navigation area */
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+    div[data-testid="stSidebar"] .st-key-rel_room_engine button,
+    div[data-testid="stSidebar"] .st-key-rel_room_apu button,
+    div[data-testid="stSidebar"] .st-key-rel_room_home button {
         min-height: 62px !important;
+        height: 62px !important;
         width: 100% !important;
         border-radius: 16px !important;
         border: 1px solid #35577D !important;
         background: #213C5D !important;
+        box-shadow: none !important;
+        padding: 0 16px !important;
+        margin: 0 !important;
         color: #F5F8FC !important;
         -webkit-text-fill-color: #F5F8FC !important;
-        padding: 0 16px !important;
-        margin: 0 0 10px 0 !important;
-        box-sizing: border-box !important;
-        box-shadow: none !important;
     }
 
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+    div[data-testid="stSidebar"] .st-key-rel_room_engine button:hover,
+    div[data-testid="stSidebar"] .st-key-rel_room_apu button:hover,
+    div[data-testid="stSidebar"] .st-key-rel_room_home button:hover {
         background: #294867 !important;
         border-color: #5F91B6 !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button *,
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button p,
-    div[data-testid="stSidebar"] div[data-testid="stButton"] > button span {
+    div[data-testid="stSidebar"] .st-key-rel_room_engine button *,
+    div[data-testid="stSidebar"] .st-key-rel_room_apu button *,
+    div[data-testid="stSidebar"] .st-key-rel_room_home button * {
         color: #F5F8FC !important;
         -webkit-text-fill-color: #F5F8FC !important;
         opacity: 1 !important;
@@ -165,13 +169,19 @@ st.sidebar.markdown(
         margin: 0 !important;
     }
 
-    /* Active Reliability room card */
-    div[data-testid="stSidebar"] .room-active-card {
+    div[data-testid="stSidebar"] .st-key-rel_room_engine,
+    div[data-testid="stSidebar"] .st-key-rel_room_apu,
+    div[data-testid="stSidebar"] .st-key-rel_room_home {
+        margin: 0 0 10px 0 !important;
+    }
+
+    div[data-testid="stSidebar"] .reliability-active-card {
         min-height: 62px;
+        height: 62px;
         width: 100%;
         border-radius: 16px;
         border: 1px solid #5D9BB5;
-        background: linear-gradient(90deg,#4D9098 0%,#3D668E 100%);
+        background: linear-gradient(90deg, #4D9098 0%, #3D668E 100%);
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         display: flex;
@@ -180,17 +190,17 @@ st.sidebar.markdown(
         margin: 0 0 10px 0;
         box-sizing: border-box;
         font-size: 18px;
-        font-weight: 800;
         line-height: 1.15;
+        font-weight: 800;
     }
 
-    div[data-testid="stSidebar"] .room-active-card * {
+    div[data-testid="stSidebar"] .reliability-active-card * {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .room-active-dot {
+    div[data-testid="stSidebar"] .reliability-active-dot {
         width: 11px;
         height: 11px;
         border-radius: 50%;
@@ -213,24 +223,27 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-if st.sidebar.button("Engine Shop Visit", key="rel_room_engine", use_container_width=True):
-    st.switch_page("engine_shop_visit_page.py")
+with st.sidebar.container(key="rel_room_engine"):
+    if st.button("Engine Shop Visit", key="rel_room_engine_btn", use_container_width=True):
+        st.switch_page("engine_shop_visit_page.py")
 
-if st.sidebar.button("APU Shop Visit", key="rel_room_apu", use_container_width=True):
-    st.switch_page("apu_shop_visit_page.py")
+with st.sidebar.container(key="rel_room_apu"):
+    if st.button("APU Shop Visit", key="rel_room_apu_btn", use_container_width=True):
+        st.switch_page("apu_shop_visit_page.py")
 
 st.sidebar.markdown(
     """
-    <div class="room-active-card">
-        <span class="room-active-dot"></span>
+    <div class="reliability-active-card">
+        <span class="reliability-active-dot"></span>
         <span>Reliability Room</span>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-if st.sidebar.button("Control Center", key="rel_room_home", use_container_width=True):
-    st.switch_page("home.py")
+with st.sidebar.container(key="rel_room_home"):
+    if st.button("Control Center", key="rel_room_home_btn", use_container_width=True):
+        st.switch_page("home.py")
 
 st.sidebar.markdown(
     '<div class="room-nav-bottom-rule"></div>',
