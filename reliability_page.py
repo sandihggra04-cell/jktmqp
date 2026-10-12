@@ -110,121 +110,121 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — exact visual match with Engine/APU room sidebar
+# ROOM NAVIGATION — exact Engine/APU dimensions and styling
 # -----------------------------------------------------------------------------
-# Important: use the same native Streamlit-button approach and the same sidebar
-# colors as Engine Shop Visit.  The CSS below is injected AFTER rel_ui.inject_css,
-# so Reliability's generic blue button theme cannot override this room switcher.
+# This block intentionally copies the navigation measurements from
+# engine_shop_visit_page.py / apu_shop_visit_page.py:
+# label 10px, active card min-height 40px, radius 11px,
+# inactive buttons min-height 2.55rem and font .82rem.
 st.sidebar.markdown(
     """<style>
+    /* Same ROOMS label used by Engine Shop Visit and APU Shop Visit */
     [data-testid="stSidebar"] .cc-nav-label {
-        margin: 14px 1px 12px 1px !important;
-        color: #9BAFC8 !important;
-        -webkit-text-fill-color: #9BAFC8 !important;
-        font-size: 13px !important;
-        line-height: 1 !important;
-        font-weight: 800 !important;
-        letter-spacing: .14em !important;
-        text-transform: uppercase !important;
+        margin:14px 1px 7px !important;
+        color:#8FA4BD !important;
+        -webkit-text-fill-color:#8FA4BD !important;
+        font-size:10px !important;
+        line-height:normal !important;
+        font-weight:850 !important;
+        letter-spacing:.13em !important;
+        text-transform:uppercase !important;
     }
 
+    /* Same active-room card used by Engine/APU */
     [data-testid="stSidebar"] .cc-nav-active {
-        display: flex !important;
-        align-items: center !important;
-        gap: 14px !important;
-        width: 100% !important;
-        min-height: 62px !important;
-        box-sizing: border-box !important;
-        padding: 0 18px !important;
-        margin: 0 0 10px 0 !important;
-        border-radius: 16px !important;
-        background: linear-gradient(90deg,#4D9098 0%,#3D668E 100%) !important;
-        border: 1px solid #5D9BB5 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        font-size: 18px !important;
-        line-height: 1.15 !important;
-        font-weight: 800 !important;
-        box-shadow: none !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:9px !important;
+        width:100% !important;
+        min-height:40px !important;
+        height:auto !important;
+        box-sizing:border-box !important;
+        padding:10px 12px !important;
+        margin:4px 0 7px !important;
+        border-radius:11px !important;
+        background:linear-gradient(90deg,rgba(57,139,146,.95),rgba(45,103,142,.82)) !important;
+        border:1px solid rgba(139,220,221,.22) !important;
+        color:#FFFFFF !important;
+        -webkit-text-fill-color:#FFFFFF !important;
+        font-size:12px !important;
+        line-height:normal !important;
+        font-weight:800 !important;
+        box-shadow:0 5px 14px rgba(0,0,0,.10) !important;
+    }
+
+    [data-testid="stSidebar"] .cc-nav-active,
+    [data-testid="stSidebar"] .cc-nav-active * {
+        color:#FFFFFF !important;
+        -webkit-text-fill-color:#FFFFFF !important;
     }
 
     [data-testid="stSidebar"] .cc-nav-active .nav-dot {
-        width: 11px !important;
-        height: 11px !important;
-        border-radius: 50% !important;
-        background: #A9F0EB !important;
-        box-shadow: 0 0 0 5px rgba(169,240,235,.12) !important;
-        flex: 0 0 11px !important;
+        width:7px !important;
+        height:7px !important;
+        border-radius:50% !important;
+        background:#A3ECE8 !important;
+        flex:0 0 7px !important;
+        box-shadow:0 0 0 3px rgba(163,236,232,.10) !important;
     }
 
-    /* Match Engine/APU inactive navigation buttons.  These selectors are
-       intentionally more specific and later than Reliability's global skin. */
-    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"],
-    [data-testid="stSidebar"] .stButton > button[kind="secondary"],
-    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]) {
-        width: 100% !important;
-        min-height: 62px !important;
-        height: 62px !important;
-        border-radius: 16px !important;
-        border: 1px solid #35577D !important;
-        background: #213C5D !important;
-        color: #F5F8FC !important;
-        -webkit-text-fill-color: #F5F8FC !important;
-        font-size: 18px !important;
-        line-height: 1.15 !important;
-        font-weight: 500 !important;
-        box-shadow: none !important;
-        margin: 0 0 10px 0 !important;
-        opacity: 1 !important;
+    /* Same native secondary-button styling used in Engine/APU.
+       Loaded after Reliability's general CSS so it wins. */
+    [data-testid="stSidebar"] .stButton > button {
+        width:100% !important;
+        border-radius:11px !important;
+        min-height:2.55rem !important;
+        height:auto !important;
+        padding:0.25rem 0.75rem !important;
+        font-size:.82rem !important;
+        line-height:1.2 !important;
+        font-weight:750 !important;
+        box-shadow:none !important;
+        margin:0 !important;
     }
 
-    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"] *,
-    [data-testid="stSidebar"] .stButton > button[kind="secondary"] *,
-    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]) * {
-        color: #F5F8FC !important;
-        -webkit-text-fill-color: #F5F8FC !important;
-        font-size: 18px !important;
-        line-height: 1.15 !important;
-        font-weight: 500 !important;
-        opacity: 1 !important;
+    [data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+        background:#17344F !important;
+        border:1px solid #2E506E !important;
+        color:#EAF2FA !important;
+        -webkit-text-fill-color:#EAF2FA !important;
     }
 
-    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"]:hover,
-    [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover,
-    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]):hover {
-        background: #294867 !important;
-        border-color: #5F91B6 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
+    [data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"] *,
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] * {
+        color:#EAF2FA !important;
+        -webkit-text-fill-color:#EAF2FA !important;
+        font-size:.82rem !important;
+        line-height:1.2 !important;
+        font-weight:750 !important;
     }
 
-    [data-testid="stSidebar"] .room-nav-top-rule,
-    [data-testid="stSidebar"] .room-nav-bottom-rule {
-        height: 1px !important;
-        background: rgba(145,164,189,.24) !important;
+    [data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"]:hover,
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
+        background:#1D405F !important;
+        border-color:#4E7596 !important;
+        color:#FFFFFF !important;
+        -webkit-text-fill-color:#FFFFFF !important;
     }
-    [data-testid="stSidebar"] .room-nav-top-rule { margin: 8px 0 22px 0 !important; }
-    [data-testid="stSidebar"] .room-nav-bottom-rule { margin: 12px 0 16px 0 !important; }
     </style>""",
     unsafe_allow_html=True,
 )
 
-# Keep each HTML fragment on a single line. This avoids Markdown interpreting
-# indented HTML as a literal code block on Streamlit Cloud.
-st.sidebar.markdown('<div class="room-nav-top-rule"></div>', unsafe_allow_html=True)
-st.sidebar.markdown('<div class="cc-nav-label">ROOMS</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="cc-nav-label">Rooms</div>', unsafe_allow_html=True)
 
 if st.sidebar.button("Engine Shop Visit", use_container_width=True, key="rel_side_engine"):
     st.switch_page("engine_shop_visit_page.py")
+
 if st.sidebar.button("APU Shop Visit", use_container_width=True, key="rel_side_apu"):
     st.switch_page("apu_shop_visit_page.py")
 
-st.sidebar.markdown('<div class="cc-nav-active"><span class="nav-dot"></span>Reliability Room</div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    '<div class="cc-nav-active"><span class="nav-dot"></span>Reliability Room</div>',
+    unsafe_allow_html=True,
+)
 
 if st.sidebar.button("Control Center", use_container_width=True, key="rel_side_home"):
     st.switch_page("home.py")
-
-st.sidebar.markdown('<div class="room-nav-bottom-rule"></div>', unsafe_allow_html=True)
 
 st.sidebar.toggle("Night mode", key="night_mode", help="Switch between light and dark display modes.")
 
