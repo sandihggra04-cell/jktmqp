@@ -212,16 +212,16 @@ st.sidebar.markdown(
 
 st.sidebar.markdown('<div class="cc-nav-label">Rooms</div>', unsafe_allow_html=True)
 
+st.sidebar.markdown(
+    '<div class="cc-nav-active"><span class="nav-dot"></span>Reliability Room</div>',
+    unsafe_allow_html=True,
+)
+
 if st.sidebar.button("Engine Shop Visit", use_container_width=True, key="rel_side_engine"):
     st.switch_page("engine_shop_visit_page.py")
 
 if st.sidebar.button("APU Shop Visit", use_container_width=True, key="rel_side_apu"):
     st.switch_page("apu_shop_visit_page.py")
-
-st.sidebar.markdown(
-    '<div class="cc-nav-active"><span class="nav-dot"></span>Reliability Room</div>',
-    unsafe_allow_html=True,
-)
 
 if st.sidebar.button("Control Center", use_container_width=True, key="rel_side_home"):
     st.switch_page("home.py")
