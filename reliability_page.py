@@ -110,130 +110,121 @@ render_sidebar_brand()
 
 
 # -----------------------------------------------------------------------------
-# ROOM NAVIGATION — locked visual using pure HTML anchors
+# ROOM NAVIGATION — exact visual match with Engine/APU room sidebar
 # -----------------------------------------------------------------------------
+# Important: use the same native Streamlit-button approach and the same sidebar
+# colors as Engine Shop Visit.  The CSS below is injected AFTER rel_ui.inject_css,
+# so Reliability's generic blue button theme cannot override this room switcher.
 st.sidebar.markdown(
-    r"""
-    <style>
-    div[data-testid="stSidebar"] .room-nav-shell {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    div[data-testid="stSidebar"] .room-nav-rule {
-        height: 1px;
-        background: rgba(145,164,189,.24);
-        margin: 8px 0 24px 0;
-    }
-
-    div[data-testid="stSidebar"] .room-nav-title {
+    """<style>
+    [data-testid="stSidebar"] .cc-nav-label {
+        margin: 14px 1px 12px 1px !important;
         color: #9BAFC8 !important;
         -webkit-text-fill-color: #9BAFC8 !important;
         font-size: 13px !important;
         line-height: 1 !important;
         font-weight: 800 !important;
         letter-spacing: .14em !important;
-        margin: 0 0 20px 2px !important;
-        padding: 0 !important;
+        text-transform: uppercase !important;
     }
 
-    div[data-testid="stSidebar"] a.room-nav-btn,
-    div[data-testid="stSidebar"] a.room-nav-btn:link,
-    div[data-testid="stSidebar"] a.room-nav-btn:visited {
-        min-height: 62px;
-        height: 62px;
-        width: 100%;
-        border-radius: 16px;
-        border: 1px solid #35577D;
-        background: #213C5D;
+    [data-testid="stSidebar"] .cc-nav-active {
+        display: flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        width: 100% !important;
+        min-height: 62px !important;
+        box-sizing: border-box !important;
+        padding: 0 18px !important;
+        margin: 0 0 10px 0 !important;
+        border-radius: 16px !important;
+        background: linear-gradient(90deg,#4D9098 0%,#3D668E 100%) !important;
+        border: 1px solid #5D9BB5 !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-size: 18px !important;
+        line-height: 1.15 !important;
+        font-weight: 800 !important;
+        box-shadow: none !important;
+    }
+
+    [data-testid="stSidebar"] .cc-nav-active .nav-dot {
+        width: 11px !important;
+        height: 11px !important;
+        border-radius: 50% !important;
+        background: #A9F0EB !important;
+        box-shadow: 0 0 0 5px rgba(169,240,235,.12) !important;
+        flex: 0 0 11px !important;
+    }
+
+    /* Match Engine/APU inactive navigation buttons.  These selectors are
+       intentionally more specific and later than Reliability's global skin. */
+    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"],
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"],
+    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]) {
+        width: 100% !important;
+        min-height: 62px !important;
+        height: 62px !important;
+        border-radius: 16px !important;
+        border: 1px solid #35577D !important;
+        background: #213C5D !important;
         color: #F5F8FC !important;
         -webkit-text-fill-color: #F5F8FC !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-        padding: 0 16px;
-        margin: 0 0 10px 0;
-        text-decoration: none !important;
-        font-size: 18px;
-        line-height: 1.15;
-        font-weight: 500;
-        text-align: center;
-        box-shadow: none;
+        font-size: 18px !important;
+        line-height: 1.15 !important;
+        font-weight: 500 !important;
+        box-shadow: none !important;
+        margin: 0 0 10px 0 !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] a.room-nav-btn:hover {
-        background: #294867;
-        border-color: #5F91B6;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        text-decoration: none !important;
-    }
-
-    div[data-testid="stSidebar"] .room-active-card {
-        min-height: 62px;
-        height: 62px;
-        width: 100%;
-        border-radius: 16px;
-        border: 1px solid #5D9BB5;
-        background: linear-gradient(90deg, #4D9098 0%, #3D668E 100%);
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        display: flex;
-        align-items: center;
-        box-sizing: border-box;
-        padding: 0 18px;
-        margin: 0 0 10px 0;
-        font-size: 18px;
-        line-height: 1.15;
-        font-weight: 800;
-        text-align: left;
+    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"] *,
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] *,
+    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]) * {
+        color: #F5F8FC !important;
+        -webkit-text-fill-color: #F5F8FC !important;
+        font-size: 18px !important;
+        line-height: 1.15 !important;
+        font-weight: 500 !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .room-active-card span {
+    [data-testid="stSidebar"] .stButton > button[data-testid="stBaseButton-secondary"]:hover,
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover,
+    [data-testid="stSidebar"] .stButton > button:not([kind="primary"]):hover {
+        background: #294867 !important;
+        border-color: #5F91B6 !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        opacity: 1 !important;
     }
 
-    div[data-testid="stSidebar"] .room-active-dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: #A9F0EB;
-        box-shadow: 0 0 0 5px rgba(169,240,235,.12);
-        margin-right: 14px;
-        flex: 0 0 auto;
+    [data-testid="stSidebar"] .room-nav-top-rule,
+    [data-testid="stSidebar"] .room-nav-bottom-rule {
+        height: 1px !important;
+        background: rgba(145,164,189,.24) !important;
     }
-
-    div[data-testid="stSidebar"] .room-nav-bottom-rule {
-        height: 1px;
-        background: rgba(145,164,189,.24);
-        margin: 22px 0 16px 0;
-    }
-    </style>
-
-    <div class="room-nav-shell">
-        <div class="room-nav-rule"></div>
-        <div class="room-nav-title">ROOMS</div>
-
-        <a class="room-nav-btn" href="/shop-visit" target="_self">Engine Shop Visit</a>
-        <a class="room-nav-btn" href="/apu-shop-visit" target="_self">APU Shop Visit</a>
-
-        <div class="room-active-card">
-            <span class="room-active-dot"></span>
-            <span>Reliability Room</span>
-        </div>
-
-        <a class="room-nav-btn" href="/" target="_self">Control Center</a>
-
-        <div class="room-nav-bottom-rule"></div>
-    </div>
-    """,
+    [data-testid="stSidebar"] .room-nav-top-rule { margin: 8px 0 22px 0 !important; }
+    [data-testid="stSidebar"] .room-nav-bottom-rule { margin: 12px 0 16px 0 !important; }
+    </style>""",
     unsafe_allow_html=True,
 )
+
+# Keep each HTML fragment on a single line. This avoids Markdown interpreting
+# indented HTML as a literal code block on Streamlit Cloud.
+st.sidebar.markdown('<div class="room-nav-top-rule"></div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="cc-nav-label">ROOMS</div>', unsafe_allow_html=True)
+
+if st.sidebar.button("Engine Shop Visit", use_container_width=True, key="rel_side_engine"):
+    st.switch_page("engine_shop_visit_page.py")
+if st.sidebar.button("APU Shop Visit", use_container_width=True, key="rel_side_apu"):
+    st.switch_page("apu_shop_visit_page.py")
+
+st.sidebar.markdown('<div class="cc-nav-active"><span class="nav-dot"></span>Reliability Room</div>', unsafe_allow_html=True)
+
+if st.sidebar.button("Control Center", use_container_width=True, key="rel_side_home"):
+    st.switch_page("home.py")
+
+st.sidebar.markdown('<div class="room-nav-bottom-rule"></div>', unsafe_allow_html=True)
 
 st.sidebar.toggle("Night mode", key="night_mode", help="Switch between light and dark display modes.")
 

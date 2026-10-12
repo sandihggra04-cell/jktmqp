@@ -27,7 +27,7 @@ def normalize_source_url(value: str) -> str:
     """Normalize a pasted source URL.
 
     Supports a plain URL and Markdown-style copied links such as:
-        [https://...](https://...\&file=...)
+        [https://...](https://...\\&file=...)
     """
     value = str(value or "").strip().strip('"').strip("'")
     if not value:
