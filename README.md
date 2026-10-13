@@ -98,3 +98,7 @@ Private corporate SharePoint links are supported through Microsoft Graph. See `S
 ## v4.7.6 Off Wing filter
 
 Engine Shop Visit and APU Shop Visit include an **Off Wing** Progress option. Off Wing includes every populated progress value except Completed/Complete.
+
+
+## v5.3.0 automatic Drive sources
+The dashboard contains built-in primary Google Drive/Sheets sources. Users do not need to paste URLs. Manual Excel/CSV uploads remain available as session-only overrides. Use **Refresh Data** for immediate synchronization.

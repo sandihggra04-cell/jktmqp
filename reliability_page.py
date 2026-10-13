@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import time
 from io import BytesIO
 import hashlib
 from pathlib import Path
@@ -16,7 +17,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from session_uploads import remember_upload, restore_upload, remember_uploads, restore_uploads, upload_memory_info, upload_memories_info
+from session_uploads import SessionUploadedFile, remember_upload, restore_upload, remember_uploads, restore_uploads, upload_memory_info, upload_memories_info
 
 from rel_charts import (
     powerplant_contribution_line,
@@ -85,6 +86,9 @@ from rel_intelligence import (
     subata_summary,
     tail_watchlist,
 )
+
+from fixed_sources import get_fixed_source, RELIABILITY_AUTO_SYNC_SECONDS
+from sv_source_loader import download_google_drive_file
 
 from rel_ui import (
     inject_css,
@@ -491,6 +495,10 @@ def _source_signature(sources) -> tuple:
             except Exception:
                 items.append(("path", str(source), str(modified_at or "")))
         else:
+            remote_signature = getattr(source, "source_signature", None)
+            if remote_signature:
+                items.append(("remote", str(name), str(remote_signature)))
+                continue
             data = _source_bytes(source)
             digest = hashlib.sha1(data).hexdigest()
             items.append(("upload", str(name), len(data), digest))
@@ -1144,81 +1152,127 @@ def save_part_uploads(uploaded_files) -> tuple[int, list[str]]:
             errors.append(f"{getattr(uploaded_file, 'name', 'component-removal')}: {exc}")
     return saved, errors
 
+
+@st.cache_data(ttl=RELIABILITY_AUTO_SYNC_SECONDS, show_spinner=False)
+def _download_fixed_reliability_source(source_key: str, url: str, mode: str, file_name: str):
+    data, _fmt, label = download_google_drive_file(url, mode=mode, timeout=120)
+    digest = hashlib.sha1(data).hexdigest()
+    return data, digest, label, datetime.now().strftime("%d %b %Y · %H:%M:%S")
+
+
+def _fixed_session_file(source_key: str):
+    cfg = get_fixed_source(source_key)
+    data, digest, label, synced_at = _download_fixed_reliability_source(
+        source_key, cfg["url"], cfg.get("mode", "auto"), cfg["name"]
+    )
+    file_obj = SessionUploadedFile(
+        data, cfg["name"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    file_obj.source_signature = f"{source_key}:{digest}"
+    return file_obj, {"key": source_key, "name": cfg["name"], "label": label, "synced_at": synced_at}
+
+
+def _load_fixed_group(keys: list[str]):
+    files, meta, errors = [], [], []
+    for key in keys:
+        try:
+            f, info = _fixed_session_file(key)
+            files.append(f)
+            meta.append(info)
+        except Exception as exc:
+            cfg = get_fixed_source(key)
+            errors.append(f"{cfg['name']}: {exc}")
+    return files, meta, errors
+
+
+@st.fragment(run_every=f"{RELIABILITY_AUTO_SYNC_SECONDS}s")
+def _reliability_auto_sync_tick():
+    now = time.time()
+    last = st.session_state.get("_reliability_auto_sync_tick_epoch")
+    if last is None:
+        st.session_state["_reliability_auto_sync_tick_epoch"] = now
+        return
+    if now - float(last) >= max(30, RELIABILITY_AUTO_SYNC_SECONDS - 5):
+        st.session_state["_reliability_auto_sync_tick_epoch"] = now
+        st.rerun()
+
+
+_reliability_auto_sync_tick()
+
 # -----------------------------------------------------------------------------
 # DATA MANAGEMENT
 # -----------------------------------------------------------------------------
 with st.sidebar.expander("⬆ INPUT / UPDATE DATA", expanded=False):
-    local_delay_files = discover_delay_files(DELAY_DIR)
+    st.markdown("**PRIMARY SOURCE**")
+    st.caption("Google Drive otomatis · Delay 1 · Utilization 3 · Component Removal 1")
+    st.caption(f"Auto sync ± {RELIABILITY_AUTO_SYNC_SECONDS // 60} menit · Refresh Data untuk update langsung")
+
+    if st.button("↻ Refresh Data", use_container_width=True, key="refresh_data"):
+        _download_fixed_reliability_source.clear()
+        _clear_reliability_processed_cache()
+        st.session_state["_reliability_auto_sync_tick_epoch"] = time.time()
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("**MANUAL OVERRIDE / BACKUP**")
+    st.caption("Manual file berlaku selama session. Browser refresh kembali ke Google Drive otomatis.")
+
     uploaded_delay_files = st.file_uploader(
-        "All-ATA technical-delay Excel / CSV",
-        type=["xlsx", "xls", "csv"],
-        accept_multiple_files=True,
-        help=(
-            "Upload raw technical-delay rows for ALL approved ATA. Powerplant ATA 49 & 71–80 are used for engineering analytics; "
-            "other ATA are retained for the official Powerplant Delay Contribution denominator."
-        ),
-        key="upload_delay",
+        "All-ATA technical-delay Excel / CSV", type=["xlsx", "xls", "csv"],
+        accept_multiple_files=True, key="upload_delay",
     )
     if uploaded_delay_files:
         remember_uploads("reliability_delay_session_uploads", uploaded_delay_files)
     else:
         uploaded_delay_files = restore_uploads("reliability_delay_session_uploads")
-    _delay_session_files = upload_memories_info("reliability_delay_session_uploads")
 
     uploaded_exposure_files = st.file_uploader(
-        "Revenue T/O / Utilization",
-        type=["xlsx", "xls", "csv"],
-        accept_multiple_files=True,
-        help=(
-            "Upload satu atau banyak workbook fleet. Untuk exposure, dashboard membaca Utilization!B:N (row cycles). "
-            "Workbook standard yang juga memiliki IFSD/RTO/RTB/UER/ERR/SVR/D&C akan otomatis dipakai pada tab Operational Events. "
-            "Fleet dibaca dari nama file/engine family; file yang ambigu dapat dipetakan manual."
-        ),
-        key="upload_exposure",
+        "Revenue T/O / Utilization", type=["xlsx", "xls", "csv"],
+        accept_multiple_files=True, key="upload_exposure",
+        help="Jika manual override digunakan, upload seluruh utilization workbook yang ingin dipakai pada session ini.",
     )
     if uploaded_exposure_files:
         remember_uploads("reliability_exposure_session_uploads", uploaded_exposure_files)
     else:
         uploaded_exposure_files = restore_uploads("reliability_exposure_session_uploads")
-    _exposure_session_files = upload_memories_info("reliability_exposure_session_uploads")
 
-    # Historical calculation support remains available from the packaged
-    # reference workbook in data/support, but its upload control is intentionally
-    # hidden from the operational dashboard UI.
     uploaded_support = None
 
     uploaded_part_files = st.file_uploader(
-        "Component Removal / Part Replacement",
-        type=["xlsx", "xls", "csv"],
-        accept_multiple_files=True,
-        help=(
-            "Upload component-removal report. Dashboard uses Powerplant ATA 49 & 71–80 and RemCode "
-            f"{', '.join(sorted(UNSCHEDULED_REMOVAL_CODES))} as unscheduled. Part Name / Part Number are read directly; no Rectification parser is used."
-        ),
-        key="upload_parts",
+        "Component Removal / Part Replacement", type=["xlsx", "xls", "csv"],
+        accept_multiple_files=True, key="upload_parts",
     )
     if uploaded_part_files:
         remember_uploads("reliability_parts_session_uploads", uploaded_part_files)
     else:
         uploaded_part_files = restore_uploads("reliability_parts_session_uploads")
-    _parts_session_files = upload_memories_info("reliability_parts_session_uploads")
 
-    include_local = st.checkbox("Use files in data/delay", value=True, key="include_local")
-    if st.button("↻ Refresh Data", use_container_width=True, key="refresh_data"):
-        _clear_reliability_processed_cache()
-        st.cache_data.clear()
-        st.rerun()
+_fixed_delay_files, _fixed_delay_meta, _fixed_delay_errors = ([], [], [])
+_fixed_exposure_files, _fixed_exposure_meta, _fixed_exposure_errors = ([], [], [])
+_fixed_part_files, _fixed_part_meta, _fixed_part_errors = ([], [], [])
 
-sources = []
-if include_local and local_delay_files:
-    sources.extend(local_source_tuples(local_delay_files))
-sources.extend(uploaded_source_tuples(uploaded_delay_files))
+if not uploaded_delay_files:
+    _fixed_delay_files, _fixed_delay_meta, _fixed_delay_errors = _load_fixed_group(["technical_delay"])
+if not uploaded_exposure_files:
+    _fixed_exposure_files, _fixed_exposure_meta, _fixed_exposure_errors = _load_fixed_group(
+        ["utilization_b737", "utilization_b777", "utilization_a330"]
+    )
+if not uploaded_part_files:
+    _fixed_part_files, _fixed_part_meta, _fixed_part_errors = _load_fixed_group(["component_removal"])
 
+_effective_delay_files = uploaded_delay_files or _fixed_delay_files
+_effective_exposure_files = uploaded_exposure_files or _fixed_exposure_files
+_effective_part_files = uploaded_part_files or _fixed_part_files
+
+_fixed_errors = _fixed_delay_errors + _fixed_exposure_errors + _fixed_part_errors
+if _fixed_errors:
+    with st.sidebar.expander("Data connection warning", expanded=True):
+        for _err in _fixed_errors:
+            st.error(_err)
+
+
+sources = uploaded_source_tuples(_effective_delay_files)
 using_demo = False
-if not sources:
-    demo_files = discover_delay_files(DEMO_DIR)
-    sources.extend(local_source_tuples(demo_files))
-    using_demo = True
 
 _delay_cache_hit = (
     st.session_state.get("rel_delay_signature") == _source_signature(sources)
@@ -1240,9 +1294,8 @@ if delay_df.empty:
 
 # Component-removal / part-replacement source is independent from technical-delay rows.
 # It is used only for unscheduled Part Replacement analysis.
-local_part_files = discover_part_files(PARTS_DIR)
-part_sources = local_source_tuples(local_part_files)
-part_sources.extend(uploaded_source_tuples(uploaded_part_files))
+local_part_files = []
+part_sources = uploaded_source_tuples(_effective_part_files)
 _part_sig = _source_signature(part_sources)
 _part_cache_hit = (
     st.session_state.get("rel_part_signature") == _part_sig
@@ -1258,12 +1311,9 @@ else:
 
 # Normal operational exposure has precedence. If absent, the calculation-support
 # workbook can provide yearly Revenue T/O as a method-consistent fallback.
-exposure_files = [
-    p for p in discover_delay_files(EXPOSURE_DIR)
-    if "template" not in p.stem.casefold()
-]
+exposure_files = []
 exposure_df, exposure_errors, _exposure_signature, _exposure_cache_hit = _cached_exposure_dataset(
-    exposure_files, uploaded_exposure_files
+    exposure_files, _effective_exposure_files
 )
 raw_exposure_df = exposure_df.copy()
 loaded_fleets = sorted(
@@ -1280,7 +1330,7 @@ _operational_source_objects: dict[str, object] = {}
 for _p in exposure_files:
     if _p.suffix.lower() in {".xlsx", ".xls"}:
         _operational_source_objects[_p.name] = _p
-for _uploaded in uploaded_exposure_files or []:
+for _uploaded in _effective_exposure_files or []:
     _name = str(getattr(_uploaded, "name", ""))
     if Path(_name).suffix.lower() in {".xlsx", ".xls"}:
         _operational_source_objects[_name] = _uploaded  # uploaded/session copy supersedes saved local copy

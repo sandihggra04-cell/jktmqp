@@ -6,3 +6,4 @@ openpyxl>=3.1
 xlrd>=2.0
 requests>=2.32
 msal>=1.31,<2
+google-auth>=2.35,<3

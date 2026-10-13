@@ -52,14 +52,15 @@ from engine_config import (
     PHASES,
 )
 from engine_data_utils import clean_data, esn_source_column, recognized_columns, promote_header_row
+from fixed_sources import get_fixed_source
 if str(CONTROL_CENTER_ROOT) not in sys.path:
     sys.path.insert(0, str(CONTROL_CENTER_ROOT))
 ROOT_DIR = Path(__file__).resolve().parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from sv_source_loader import source_kind, is_supported_source_url, dataframes_from_remote_file, dataframes_from_uploaded_file, sharepoint_graph_status, configured_source_url
-from session_uploads import remember_upload, restore_upload, upload_memory_info
+from sv_source_loader import source_kind, is_supported_source_url, dataframes_from_remote_file, dataframes_from_uploaded_file, sharepoint_graph_status
+from session_uploads import remember_upload, restore_upload, upload_memory_info, clear_upload_memory
 
 
 
@@ -1015,42 +1016,13 @@ def reset_monitor_filters():
 # ============================================================
 # SESSION
 # ============================================================
-configured = configured_source_url(
-    "engine_shop_visit",
-    GOOGLE_SHEET_URL.strip(),
-)
+_ENGINE_FIXED_SOURCE = get_fixed_source("engine_shop_visit")
+configured = _ENGINE_FIXED_SOURCE["url"].strip()
 
-if (
-    configured
-    == "PASTE_YOUR_GOOGLE_SHEET_LINK_HERE"
-):
-    configured = ""
-
-if (
-    "sheet_url"
-    not in st.session_state
-):
-    st.session_state.sheet_url = (
-        configured
-    )
-
-if (
-    "sheet_input"
-    not in st.session_state
-):
-    _active_engine_source = str(st.session_state.get("sheet_url", "") or "").strip()
-    st.session_state.sheet_input = (
-        _active_engine_source
-        if _active_engine_source and _active_engine_source != "__uploaded_engine__"
-        else configured
-    )
-
-if (
-    "selected_esn"
-    not in st.session_state
-):
+if "sheet_url" not in st.session_state:
+    st.session_state.sheet_url = configured
+if "selected_esn" not in st.session_state:
     st.session_state.selected_esn = ""
-
 
 # v4.8.9 — restore Engine room data after moving through another room.
 if "dashboard_df" not in st.session_state and isinstance(st.session_state.get("engine_room_cached_df"), pd.DataFrame):
@@ -1088,19 +1060,14 @@ with st.sidebar:
         st.switch_page("home.py")
 
     st.markdown('<div class="sidebar-section">Data connection</div>', unsafe_allow_html=True)
-    st.markdown('<div class="source-label">Source URL or local file</div>', unsafe_allow_html=True)
+    st.markdown('<div class="source-label">Primary source</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="source-meta">Google Sheets · SharePoint Doc.aspx / OneDrive Excel · local Excel/CSV</div>',
+        f'<div class="sidebar-info"><strong>● AUTO CONNECTED</strong><br>'
+        f'<span>{_ENGINE_FIXED_SOURCE["name"]}<br>Google Drive / Sheets · auto refresh</span></div>',
         unsafe_allow_html=True,
     )
-    st.text_input(
-        "Source URL / file path",
-        key="sheet_input",
-        placeholder="Paste Google Sheet / SharePoint URL or file path…",
-        label_visibility="collapsed",
-    )
 
-    st.markdown('<div class="source-label">Upload file</div>', unsafe_allow_html=True)
+    st.markdown('<div class="source-label">Manual override / backup</div>', unsafe_allow_html=True)
     uploaded_engine_source = st.file_uploader(
         "Upload Excel / CSV",
         type=["xlsx", "xls", "csv"],
@@ -1110,38 +1077,37 @@ with st.sidebar:
     if uploaded_engine_source is not None:
         remember_upload("engine_sv_session_upload", uploaded_engine_source)
 
-    # File-uploader widgets cannot be repopulated by Streamlit after navigating
-    # to another page. Keep the bytes in a separate session key and rebuild a
-    # file-like object transparently when the user returns to this room.
     _engine_remembered_info = upload_memory_info("engine_sv_session_upload")
     if _engine_remembered_info and uploaded_engine_source is None:
         st.markdown(
             f'<div style="margin-top:-4px;margin-bottom:8px;color:#9FB7D1;font-size:11px;">'
-            f'Active session file: <b style="color:#EAF3FC">{_engine_remembered_info["name"]}</b></div>',
+            f'Session backup: <b style="color:#EAF3FC">{_engine_remembered_info["name"]}</b></div>',
             unsafe_allow_html=True,
         )
 
     connect_clicked = st.button(
-        "Connect / Test",
+        "↻ Refresh Data",
         type="primary",
         use_container_width=True,
+        key="engine_refresh_fixed",
     )
+    if st.session_state.get("sheet_url") == "__uploaded_engine__":
+        if st.button("Use Automatic Source", use_container_width=True, key="engine_return_auto"):
+            clear_upload_memory("engine_sv_session_upload")
+            for _key in ["dashboard_df", "engine_room_cached_df", "engine_room_cached_source", "loaded_sheet_url"]:
+                st.session_state.pop(_key, None)
+            st.session_state.sheet_url = configured
+            st.rerun()
 
 
-# Restore remembered Engine upload when returning from another room. A newly
-# typed URL still takes precedence when Connect / Test is clicked.
-_engine_candidate_now = str(st.session_state.get("sheet_input", "") or "").strip()
-if uploaded_engine_source is None and not _engine_candidate_now:
+
+# Manual upload is a session override. If it was activated earlier and the user
+# returns from another room, restore its bytes from session memory.
+if uploaded_engine_source is None and st.session_state.get("sheet_url") == "__uploaded_engine__":
     uploaded_engine_source = restore_upload("engine_sv_session_upload")
 
 if connect_clicked:
-    candidate = (
-        st.session_state
-        .sheet_input
-        .strip()
-    )
-
-    if uploaded_engine_source is not None and not candidate:
+    if uploaded_engine_source is not None:
         try:
             with st.spinner("Reading uploaded Engine Shop Visit file..."):
                 data = fetch_uploaded_dashboard_data(uploaded_engine_source)
@@ -1160,42 +1126,17 @@ if connect_clicked:
             st.rerun()
         except Exception as exc:
             st.sidebar.error(str(exc))
-    elif not is_supported_source_url(candidate):
-        st.sidebar.error(
-            "Source tidak dikenali. Gunakan Google Sheets, SharePoint Doc.aspx/OneDrive Excel, local Excel/CSV, atau Upload Excel/CSV."
-        )
-
     else:
         try:
-            with st.spinner(
-                "Connecting to data source..."
-            ):
-                data = refresh_data(
-                    candidate
-                )
-
-            st.session_state.sheet_url = candidate
-            if len(data):
-                st.sidebar.success(
-                    f"Connected · {len(data):,} rows · {st.session_state.get('source_label', 'Google Sheet')} · "
-                    f"{st.session_state.get('schema_match_count', 0)} fields matched"
-                )
-            else:
-                st.sidebar.warning(
-                    "Connected, tetapi 0 valid shop-visit rows. "
-                    f"Source: {st.session_state.get('source_label', 'Google Sheet')} · "
-                    f"ESN column: {st.session_state.get('source_esn_column', 'not detected')}"
-                )
-
+            with st.spinner("Refreshing Engine Shop Visit from Google Drive..."):
+                data = refresh_data(configured)
+            st.session_state.sheet_url = configured
             st.rerun()
-
         except Exception as exc:
-            st.sidebar.error(
-                str(exc)
-            )
+            st.sidebar.error(str(exc))
 
 
-active_url = str(st.session_state.sheet_url or "").strip()
+active_url = str(st.session_state.sheet_url or configured).strip()
 
 if not active_url:
     st.title(
@@ -1203,7 +1144,7 @@ if not active_url:
     )
 
     st.info(
-        "Connect Google Sheets / SharePoint Excel atau upload Excel/CSV dari sidebar."
+        "Automatic Google Drive source belum dapat dibaca. Gunakan manual Upload Excel/CSV sebagai backup."
     )
 
     st.stop()

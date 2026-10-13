@@ -23,13 +23,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from sv_source_loader import source_kind, is_supported_source_url, dataframes_from_remote_file, dataframes_from_uploaded_file, sharepoint_graph_status
-from session_uploads import remember_upload, restore_upload, upload_memory_info
+from fixed_sources import get_fixed_source, SHOP_VISIT_AUTO_SYNC_SECONDS
+from session_uploads import remember_upload, restore_upload, upload_memory_info, clear_upload_memory
 
 
-try:
-    from streamlit_autorefresh import st_autorefresh
-except Exception:
-    st_autorefresh = None
 
 
 st.set_page_config(
@@ -687,6 +684,8 @@ def _apu_logo_data_uri() -> str:
     return ""
 
 APU_LOGO_URI = _apu_logo_data_uri()
+_APU_FIXED_SOURCE = get_fixed_source("apu_shop_visit")
+_APU_FIXED_URL = _APU_FIXED_SOURCE["url"].strip()
 
 with st.sidebar:
     if APU_LOGO_URI:
@@ -708,27 +707,14 @@ with st.sidebar:
         st.switch_page("home.py")
 
     st.markdown('<div class="sidebar-section">Data connection</div>', unsafe_allow_html=True)
-    st.markdown('<div class="source-label">Source URL or local file</div>', unsafe_allow_html=True)
+    st.markdown('<div class="source-label">Primary source</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="source-meta">Google Sheets · SharePoint Doc.aspx / OneDrive Excel · local Excel/CSV</div>',
+        f'<div class="sidebar-info"><strong>● AUTO CONNECTED</strong><br>'
+        f'<span>{_APU_FIXED_SOURCE["name"]}<br>Google Drive / Sheets · auto refresh</span></div>',
         unsafe_allow_html=True,
     )
 
-    # v4.7.8: explicitly disconnect the previous bundled/default APU source once.
-    # After that, preserve only what the user enters during the current session.
-    if not st.session_state.get("apu_manual_source_v478_initialized", False):
-        st.session_state["apu_exact_sheet_url"] = ""
-        st.session_state["apu_manual_source_v478_initialized"] = True
-    source_url = st.text_input(
-        "Source URL / file path",
-        value=st.session_state["apu_exact_sheet_url"],
-        key="apu_exact_sheet_input",
-        placeholder="Paste Google Sheet / SharePoint URL or file path…",
-        label_visibility="collapsed",
-    )
-    st.session_state["apu_exact_sheet_url"] = source_url.strip()
-
-    st.markdown('<div class="source-label">Upload file</div>', unsafe_allow_html=True)
+    st.markdown('<div class="source-label">Manual override / backup</div>', unsafe_allow_html=True)
     uploaded_apu_source = st.file_uploader(
         "Upload Excel / CSV",
         type=["xlsx", "xls", "csv"],
@@ -742,24 +728,51 @@ with st.sidebar:
     if _apu_remembered_info and uploaded_apu_source is None:
         st.markdown(
             f'<div style="margin-top:-4px;margin-bottom:8px;color:#9FB7D1;font-size:11px;">'
-            f'Active session file: <b style="color:#EAF3FC">{_apu_remembered_info["name"]}</b></div>',
+            f'Session backup: <b style="color:#EAF3FC">{_apu_remembered_info["name"]}</b></div>',
             unsafe_allow_html=True,
         )
 
     refresh = st.button(
-        "Connect / Test",
+        "↻ Refresh Data",
         type="primary",
         use_container_width=True,
         key="apu_exact_refresh",
     )
+    if st.session_state.get("apu_room_cached_source") == "__uploaded_apu__":
+        if st.button("Use Automatic Source", use_container_width=True, key="apu_return_auto"):
+            clear_upload_memory("apu_sv_session_upload")
+            for _key in [
+                "apu_room_cached_df", "apu_room_cached_source", "apu_room_cached_upload_signature",
+                "apu_room_cached_source_label", "apu_room_cached_schema_count", "apu_room_cached_diagnostics",
+            ]:
+                st.session_state.pop(_key, None)
+            load_apu_source.clear()
+            st.rerun()
+
 
 
 if refresh:
     load_apu_source.clear()
+    if st.session_state.get("apu_room_cached_source") != "__uploaded_apu__":
+        st.session_state.pop("apu_room_cached_df", None)
 
 
-if st_autorefresh is not None:
-    st_autorefresh(interval=60_000, limit=None, key="apu_exact_auto_refresh")
+@st.fragment(run_every=f"{SHOP_VISIT_AUTO_SYNC_SECONDS}s")
+def _apu_auto_sync_tick():
+    now = __import__("time").time()
+    last = st.session_state.get("_apu_auto_sync_tick_epoch")
+    if last is None:
+        st.session_state["_apu_auto_sync_tick_epoch"] = now
+        return
+    if now - float(last) >= max(30, SHOP_VISIT_AUTO_SYNC_SECONDS - 3):
+        st.session_state["_apu_auto_sync_tick_epoch"] = now
+        if st.session_state.get("apu_room_cached_source") != "__uploaded_apu__":
+            load_apu_source.clear()
+            st.session_state.pop("apu_room_cached_df", None)
+            st.rerun()
+
+
+_apu_auto_sync_tick()
 
 
 # Header
@@ -785,19 +798,14 @@ with h2:
             st.switch_page("reliability_page.py")
 
 
-active_source_url = source_url.strip()
+active_source_url = _APU_FIXED_URL
 
-# v4.8.9 — a file uploaded in this room remains available while the browser
-# session is alive, even after the user opens another room and comes back.
-# A typed URL always takes precedence over an older remembered upload.
-if uploaded_apu_source is None and not active_source_url:
+# Manual upload remains active while the browser session lives. Browser refresh
+# returns to the permanent Google Drive source.
+if uploaded_apu_source is None and st.session_state.get("apu_room_cached_source") == "__uploaded_apu__":
     uploaded_apu_source = restore_upload("apu_sv_session_upload")
 
 _has_apu_cache = isinstance(st.session_state.get("apu_room_cached_df"), pd.DataFrame)
-
-if not active_source_url and uploaded_apu_source is None and not _has_apu_cache:
-    st.info("Masukkan source URL / file path atau upload Excel/CSV APU Shop Visit pada sidebar.")
-    st.stop()
 
 
 try:

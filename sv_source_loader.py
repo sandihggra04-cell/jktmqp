@@ -57,7 +57,11 @@ def source_kind(url: str) -> str:
     """
     text = normalize_source_url(url)
     low = text.lower()
-    if re.search(r"docs\.google\.com/spreadsheets/d/", low):
+    if (
+        re.search(r"docs\.google\.com/spreadsheets/d/", low)
+        or re.search(r"drive\.google\.com/(?:file/d/|open\?)", low)
+        or "drive.usercontent.google.com" in low
+    ):
         return "google"
     if "sharepoint.com" in low and ("/:l:/" in low or re.search(r"/lists/[^/?#]+", low)):
         return "microsoft_list"
@@ -934,6 +938,150 @@ def _detect_format(data: bytes, url_or_name: str = "", content_type: str = "") -
     raise ValueError("Response bukan file Excel/CSV yang dapat dibaca.")
 
 
+
+def google_drive_file_id(url: str) -> str:
+    """Extract a Google Drive/Sheets file ID from a URL or raw ID."""
+    text = normalize_source_url(url)
+    if re.fullmatch(r"[A-Za-z0-9_-]{20,}", text):
+        return text
+    for pattern in (
+        r"/spreadsheets/d/([A-Za-z0-9_-]+)",
+        r"/file/d/([A-Za-z0-9_-]+)",
+        r"[?&]id=([A-Za-z0-9_-]+)",
+    ):
+        m = re.search(pattern, text)
+        if m:
+            return m.group(1)
+    raise ValueError("Google Drive / Sheets URL tidak memiliki file ID yang valid.")
+
+
+def _google_drive_service_account_info() -> dict:
+    """Optional service account from Streamlit Cloud Secrets [google_drive]."""
+    try:
+        import streamlit as st
+        section = st.secrets.get("google_drive", {})
+        if hasattr(section, "items"):
+            info = {str(k): v for k, v in section.items()}
+            if info.get("private_key"):
+                info["private_key"] = str(info["private_key"]).replace("\\n", "\n")
+            if info.get("client_email") and info.get("private_key"):
+                info.setdefault("type", "service_account")
+                info.setdefault("token_uri", "https://oauth2.googleapis.com/token")
+                return info
+    except Exception:
+        pass
+    return {}
+
+
+def _google_authorized_session():
+    info = _google_drive_service_account_info()
+    if not info:
+        return None
+    try:
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import AuthorizedSession
+    except ImportError as exc:
+        raise RuntimeError(
+            "Private Google Drive is configured but google-auth is not installed. "
+            "Run: python -m pip install -r requirements.txt"
+        ) from exc
+    creds = service_account.Credentials.from_service_account_info(
+        info, scopes=["https://www.googleapis.com/auth/drive.readonly"]
+    )
+    return AuthorizedSession(creds)
+
+
+def download_google_drive_file(url: str, mode: str = "auto", timeout: int = 120):
+    """Download the latest Google Sheet or Excel file stored in Google Drive.
+
+    `google_sheet` exports a native Sheet to XLSX. `drive_xlsx` downloads the
+    stored Excel binary. `auto` tries both. Private files are supported when a
+    service account is configured under [google_drive] in Streamlit Secrets.
+    """
+    normalized = normalize_source_url(url)
+    file_id = google_drive_file_id(normalized)
+    mode = str(mode or "auto").strip().lower()
+    xlsx_mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    errors: list[str] = []
+
+    auth = _google_authorized_session()
+    if auth is not None:
+        try:
+            meta_url = (
+                f"https://www.googleapis.com/drive/v3/files/{file_id}"
+                "?fields=id,name,mimeType,modifiedTime,size&supportsAllDrives=true"
+            )
+            meta_r = auth.get(meta_url, timeout=timeout)
+            meta_r.raise_for_status()
+            meta = meta_r.json()
+            mime = str(meta.get("mimeType") or "")
+            name = str(meta.get("name") or file_id)
+            native = mime == "application/vnd.google-apps.spreadsheet"
+            if mode == "google_sheet" or (mode == "auto" and native):
+                endpoint = (
+                    f"https://www.googleapis.com/drive/v3/files/{file_id}/export"
+                    f"?mimeType={quote(xlsx_mime, safe='')}"
+                )
+            else:
+                endpoint = (
+                    f"https://www.googleapis.com/drive/v3/files/{file_id}"
+                    "?alt=media&supportsAllDrives=true"
+                )
+            r = auth.get(endpoint, timeout=timeout)
+            r.raise_for_status()
+            data = bytes(r.content or b"")
+            if not data:
+                raise ValueError("Google Drive API returned an empty file.")
+            fmt = _detect_format(data, name, r.headers.get("Content-Type") or "")
+            return data, fmt, f"Google Drive · {name}"
+        except Exception as exc:
+            errors.append(f"Drive API: {type(exc).__name__}: {exc}")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 Powerplant-Engineering-Control-Center/5.3.0",
+        "Accept": f"{xlsx_mime},application/vnd.ms-excel,text/csv,*/*",
+    }
+    candidates: list[tuple[str, str]] = []
+    if mode in {"google_sheet", "auto"}:
+        candidates.append((
+            "Google Sheets XLSX export",
+            f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx",
+        ))
+    if mode in {"drive_xlsx", "auto"}:
+        candidates.extend([
+            ("Google Drive raw download", f"https://drive.usercontent.google.com/download?id={file_id}&export=download&confirm=t"),
+            ("Google Drive uc download", f"https://drive.google.com/uc?export=download&id={file_id}&confirm=t"),
+        ])
+
+    for label, candidate in candidates:
+        try:
+            r = requests.get(candidate, headers=headers, timeout=timeout, allow_redirects=True)
+            if r.status_code in (401, 403):
+                errors.append(f"{label}: HTTP {r.status_code}")
+                continue
+            r.raise_for_status()
+            body = bytes(r.content or b"")
+            if not body:
+                errors.append(f"{label}: empty response")
+                continue
+            if body.lstrip().lower().startswith((b"<!doctype html", b"<html")):
+                errors.append(f"{label}: HTML/login/confirmation page returned")
+                continue
+            try:
+                fmt = _detect_format(body, r.url or candidate, r.headers.get("Content-Type") or "")
+                return body, fmt, label
+            except Exception as exc:
+                errors.append(f"{label}: {exc}")
+        except Exception as exc:
+            errors.append(f"{label}: {type(exc).__name__}: {exc}")
+
+    raise PermissionError(
+        "Google Drive source tidak dapat diunduh. Beri dashboard akses Viewer "
+        "(Anyone-with-link atau service account [google_drive]). "
+        + " | ".join(errors[-4:])
+    )
+
+
 def download_sharepoint_file(url: str, timeout: int = 45):
     """Download SharePoint/OneDrive spreadsheet.
 
@@ -1079,7 +1227,9 @@ def dataframes_from_remote_file(url: str):
     kind = source_kind(url)
     if kind == "microsoft_list":
         return dataframes_from_microsoft_list(url)
-    if kind == "sharepoint":
+    if kind == "google":
+        data, fmt, label = download_google_drive_file(url, mode="auto")
+    elif kind == "sharepoint":
         data, fmt, label = download_sharepoint_file(url)
     elif kind == "file_url":
         # File URLs may also return JSON when used as a Power Automate/API bridge.

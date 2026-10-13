@@ -131,3 +131,20 @@ https://tenant.sharepoint.com/:x:/r/sites/PowerplantTeam/_layouts/15/Doc.aspx?so
 The loader recognizes the `sourcedoc` and `file` parameters. It first tries anonymous/direct download variants (`action=download`, `download=1`, and a GUID download endpoint).
 
 If the corporate SharePoint file is private, the Streamlit backend cannot reuse the Microsoft 365 browser login cookie. In that case configure the existing `[sharepoint]` Microsoft Graph credentials in `.streamlit/secrets.toml`. The Graph fallback resolves the site, searches its document libraries for the exact workbook name, prefers a matching SharePoint unique ID when available, and downloads the matching drive item.
+
+
+## Google Drive private access (optional)
+The built-in sources can be read without credentials while they are shared for link access. For private access, share the files with a Google service account and configure Streamlit Secrets:
+
+```toml
+[google_drive]
+type = "service_account"
+project_id = "..."
+private_key_id = "..."
+private_key = """-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"""
+client_email = "dashboard-reader@project.iam.gserviceaccount.com"
+client_id = "..."
+token_uri = "https://oauth2.googleapis.com/token"
+```
+
+The dashboard requests read-only Drive scope.
