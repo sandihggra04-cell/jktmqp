@@ -102,3 +102,7 @@ Engine Shop Visit and APU Shop Visit include an **Off Wing** Progress option. Of
 
 ## v5.3.0 automatic Drive sources
 The dashboard contains built-in primary Google Drive/Sheets sources. Users do not need to paste URLs. Manual Excel/CSV uploads remain available as session-only overrides. Use **Refresh Data** for immediate synchronization.
+
+
+## v5.3.1 source update
+Technical Delay, Engine Shop Visit, and APU Shop Visit now use fixed Excel (.xlsx) files stored in Google Drive. Manual upload remains available as a session-only backup/override.

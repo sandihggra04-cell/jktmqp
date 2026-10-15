@@ -240,7 +240,9 @@ def load_apu_source(url: str):
     kind = source_kind(url)
     diagnostics = []
 
-    if kind in ("microsoft_list", "sharepoint", "file_url", "remote_data", "local_file"):
+    if kind in ("google", "microsoft_list", "sharepoint", "file_url", "remote_data", "local_file"):
+        # Unified loader supports both native Google Sheets and stored Excel (.xlsx)
+        # files in Google Drive.
         frames = dataframes_from_remote_file(url)
         best = None
         for label, df in frames:

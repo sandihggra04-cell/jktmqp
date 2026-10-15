@@ -726,7 +726,10 @@ def fetch_uploaded_dashboard_data(uploaded):
 def fetch_dashboard_data(sheet_url):
     """Load Engine Shop Visit from Google Sheets, SharePoint/OneDrive Excel, or direct file URL."""
     kind = source_kind(sheet_url)
-    if kind in ("microsoft_list", "sharepoint", "file_url", "remote_data", "local_file"):
+    if kind in ("google", "microsoft_list", "sharepoint", "file_url", "remote_data", "local_file"):
+        # Unified loader supports both native Google Sheets and stored Excel (.xlsx)
+        # files in Google Drive. This keeps the fixed source compatible if the
+        # source format changes between Sheet and Excel without changing the UI.
         return _engine_best_from_frames(dataframes_from_remote_file(sheet_url))
 
     if kind != "google":
